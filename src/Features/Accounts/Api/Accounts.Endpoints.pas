@@ -23,7 +23,8 @@ begin
     function(Svc: IAccountService): IResult
     begin
       Result := Results.Ok(Svc.List);
-    end);
+    end)
+    .RequireAuthorization;
 
   Builder.MapGet<IAccountService, Int64, IResult>('/api/accounts/{id}',
     function(Svc: IAccountService; Id: Int64): IResult
@@ -33,7 +34,8 @@ begin
       if Svc.GetById(Id, R) then
         Exit(Results.Ok(R));
       Result := Results.NotFound('Account not found');
-    end);
+    end)
+    .RequireAuthorization;
 
   Builder.MapPost<TCreateAccountRequest, IAccountService, IResult>('/api/accounts',
     function(Req: TCreateAccountRequest; Svc: IAccountService): IResult
@@ -42,7 +44,8 @@ begin
     begin
       R := Svc.Create(Req);
       Result := Results.Created('/api/accounts/' + R.Id.ToString, R);
-    end);
+    end)
+    .RequireAuthorization('Admin');
 end;
 
 end.
