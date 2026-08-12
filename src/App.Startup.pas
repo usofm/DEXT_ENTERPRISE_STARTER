@@ -9,18 +9,21 @@ uses
   Dext.Web;
 
 type
-  TAppStartup = class
+  TAppStartup = class(TInterfacedObject, IStartup)
   private
     class procedure ConfigureDatabase(Options: TDbContextOptions); static;
   public
-    class procedure ConfigureServices(const Services: TDextServices); static;
-    class procedure MapEndpoints(const Builder: TAppBuilder); static;
+    procedure ConfigureServices(const Services: TDextServices; const Configuration: IConfiguration);
+    procedure Configure(const App: IWebApplication);
   end;
 
 implementation
 
 uses
   Dext.Auth.JWT,
+  Dext.Auth.Middleware,
+  Dext.Swagger.Middleware,
+  Dext.OpenAPI.Types,
   App.Environment,
   App.DbContext,
   Auth.Contracts,
@@ -37,7 +40,8 @@ begin
     .WithPooling(True);
 end;
 
-class procedure TAppStartup.ConfigureServices(const Services: TDextServices);
+procedure TAppStartup.ConfigureServices(const Services: TDextServices;
+  const Configuration: IConfiguration);
 var
   JwtSecret: string;
   JwtIssuer: string;
@@ -58,16 +62,30 @@ begin
     .AddScoped<IAccountService, TAccountService>;
 end;
 
-class procedure TAppStartup.MapEndpoints(const Builder: TAppBuilder);
+procedure TAppStartup.Configure(const App: IWebApplication);
+var
+  OpenApi: TOpenAPIOptions;
 begin
-  Builder.MapGet<IResult>('/health',
+  App.Builder.UseJwtAuthentication(
+    JwtOptions(TAppEnvironment.JwtSecret)
+      .Issuer(TAppEnvironment.JwtIssuer)
+      .Audience(TAppEnvironment.JwtAudience));
+
+  App.Builder.MapGet<IResult>('/health',
     function: IResult
     begin
       Result := Results.Ok('healthy');
     end);
 
-  TAuthEndpoints.MapEndpoints(Builder);
-  TAccountEndpoints.MapEndpoints(Builder);
+  TAuthEndpoints.MapEndpoints(App.Builder);
+  TAccountEndpoints.MapEndpoints(App.Builder);
+
+  OpenApi := TOpenAPIOptions.Default;
+  OpenApi.Title := 'Dext Enterprise Starter API';
+  OpenApi.Description := 'Dext-native enterprise starter for Delphi 13 and PostgreSQL';
+  OpenApi.Version := '1.0.0';
+  OpenApi := OpenApi.WithBearerAuth('JWT', 'Bearer access token');
+  App.Builder.UseSwagger(OpenApi);
 end;
 
 end.
