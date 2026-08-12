@@ -4,11 +4,14 @@ interface
 
 uses
   Dext,
+  Dext.Entity,
   Dext.DI,
   Dext.Web;
 
 type
   TAppStartup = class
+  private
+    class procedure ConfigureDatabase(Options: TDbContextOptions); static;
   public
     class procedure ConfigureServices(const Services: TDextServices); static;
     class procedure MapEndpoints(const Builder: TAppBuilder); static;
@@ -18,42 +21,40 @@ implementation
 
 uses
   App.Environment,
-  Database.Config,
-  Database.ConnectionFactory,
+  App.DbContext,
   Security.Jwt,
   Auth.Contracts,
   Auth.Service,
   Auth.Endpoints,
   Accounts.Contracts,
   Accounts.Service,
-  Accounts.FireDACRepository,
   Accounts.Endpoints;
+
+class procedure TAppStartup.ConfigureDatabase(Options: TDbContextOptions);
+begin
+  Options
+    .UsePostgreSQL(TAppEnvironment.DatabaseConnectionString)
+    .WithPooling(True);
+end;
 
 class procedure TAppStartup.ConfigureServices(const Services: TDextServices);
 var
-  DbConfig: TDatabaseConfig;
   JwtSecret: string;
   JwtIssuer: string;
   JwtAudience: string;
 begin
-  DbConfig := TAppEnvironment.Database;
   JwtSecret := TAppEnvironment.JwtSecret;
   JwtIssuer := TAppEnvironment.JwtIssuer;
   JwtAudience := TAppEnvironment.JwtAudience;
 
   Services
-    .AddSingleton<IDbConnectionFactory, TFDConnectionFactory>(
-      function(Provider: IServiceProvider): TObject
-      begin
-        Result := TFDConnectionFactory.Create(DbConfig);
-      end)
+    .AddDbContext<TAppDbContext>(ConfigureDatabase)
     .AddSingleton<IJwtService, TJwtService>(
       function(Provider: IServiceProvider): TObject
       begin
         Result := TJwtService.Create(JwtSecret, JwtIssuer, JwtAudience, 60);
       end)
     .AddSingleton<IAuthService, TDevelopmentAuthService>
-    .AddScoped<IAccountRepository, TFireDACAccountRepository>
     .AddScoped<IAccountService, TAccountService>;
 end;
 
