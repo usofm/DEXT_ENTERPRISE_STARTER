@@ -12,8 +12,9 @@ This repository is the practical golden sample for `usofm/DEXT_AI_CODING_PACK`.
 - Feature-first folders.
 - Domain/Application code does not depend on Dext Web.
 - HTTP endpoint units are thin transport adapters.
-- UniDAC is isolated in Infrastructure.
-- Financial values use `TBcd` and Firebird `NUMERIC(28,10)`.
+- FireDAC is isolated in Infrastructure.
+- PostgreSQL is the single database target for this starter.
+- Financial values use `TBcd` and PostgreSQL `NUMERIC(28,10)`.
 - Use typed Dext DI; never resolve application services from request context.
 - Use `{id}` route syntax, never `:id`.
 - Keep `Dext.Web` last among Dext helper units where class-helper order matters.
