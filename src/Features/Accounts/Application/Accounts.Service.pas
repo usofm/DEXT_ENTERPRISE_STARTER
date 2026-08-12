@@ -3,17 +3,16 @@ unit Accounts.Service;
 interface
 
 uses
-  System.SysUtils,
-  Accounts.Models,
-  Accounts.Contracts;
+  Accounts.Contracts,
+  App.DbContext;
 
 type
   TAccountService = class(TInterfacedObject, IAccountService)
   private
-    FRepository: IAccountRepository;
-    class function ToResponse(const A: TAccount): TAccountResponse; static;
+    FDb: TAppDbContext;
+    class function ToResponse(const AAccount: TObject): TAccountResponse; static;
   public
-    constructor Create(const ARepository: IAccountRepository);
+    constructor Create(ADb: TAppDbContext);
     function GetById(AId: Int64; out AResponse: TAccountResponse): Boolean;
     function List: TArray<TAccountResponse>;
     function Create(const ARequest: TCreateAccountRequest): TAccountResponse;
@@ -21,58 +20,78 @@ type
 
 implementation
 
-constructor TAccountService.Create(const ARepository: IAccountRepository);
+uses
+  System.SysUtils,
+  Dext.Collections,
+  Dext.Entity.Prototype,
+  Accounts.Models;
+
+constructor TAccountService.Create(ADb: TAppDbContext);
 begin
   inherited Create;
-  FRepository := ARepository;
+  FDb := ADb;
 end;
 
-class function TAccountService.ToResponse(const A: TAccount): TAccountResponse;
+class function TAccountService.ToResponse(const AAccount: TObject): TAccountResponse;
+var
+  Account: TAccount;
 begin
-  Result.Id := A.Id;
-  Result.Code := A.Code;
-  Result.Name := A.Name;
-  Result.Balance := A.Balance;
+  Account := TAccount(AAccount);
+  Result.Id := Account.Id;
+  Result.Code := Account.Code;
+  Result.Name := Account.Name;
+  Result.Balance := Account.Balance;
 end;
 
 function TAccountService.GetById(AId: Int64; out AResponse: TAccountResponse): Boolean;
 var
-  A: TAccount;
+  Account: TAccount;
 begin
-  Result := FRepository.GetById(AId, A);
+  Account := FDb.Accounts.Find(AId);
+  Result := Account <> nil;
   if Result then
-    AResponse := ToResponse(A);
+    AResponse := ToResponse(Account);
 end;
 
 function TAccountService.List: TArray<TAccountResponse>;
 var
-  Items: TArray<TAccount>;
+  Accounts: IList<TAccount>;
   I: Integer;
 begin
-  Items := FRepository.List;
-  SetLength(Result, Length(Items));
-  for I := 0 to High(Items) do
-    Result[I] := ToResponse(Items[I]);
+  Accounts := FDb.Accounts.ToList;
+  SetLength(Result, Accounts.Count);
+  for I := 0 to Accounts.Count - 1 do
+    Result[I] := ToResponse(Accounts[I]);
 end;
 
 function TAccountService.Create(const ARequest: TCreateAccountRequest): TAccountResponse;
 var
-  Existing: TAccount;
+  Account: TAccount;
   A: TAccount;
+  Existing: IList<TAccount>;
 begin
   if Trim(ARequest.Code) = '' then
     raise EArgumentException.Create('Account code is required');
   if Trim(ARequest.Name) = '' then
     raise EArgumentException.Create('Account name is required');
-  if FRepository.GetByCode(ARequest.Code, Existing) then
+
+  A := Prototype.Entity<TAccount>;
+  Existing := FDb.Accounts
+    .Where(A.Code = Trim(ARequest.Code))
+    .ToList;
+
+  if Existing.Count > 0 then
     raise EInvalidOpException.Create('Account code already exists');
 
-  A.Code := Trim(ARequest.Code);
-  A.Name := Trim(ARequest.Name);
-  A.Balance := ARequest.OpeningBalance;
-  A.CreatedAt := Now;
-  A.Id := FRepository.Insert(A);
-  Result := ToResponse(A);
+  Account := TAccount.Create;
+  Account.Code := Trim(ARequest.Code);
+  Account.Name := Trim(ARequest.Name);
+  Account.Balance := ARequest.OpeningBalance;
+
+  FDb.Accounts.Add(Account);
+  FDb.SaveChanges;
+
+  Result := ToResponse(Account);
 end;
 
 end.
