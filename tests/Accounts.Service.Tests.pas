@@ -15,6 +15,8 @@ type
     procedure ValidateCreate_RejectsBlankCode;
     [Test]
     procedure ValidateCreate_RejectsBlankName;
+    [Test]
+    procedure ValidateUpdate_RejectsBlankName;
   end;
 
 implementation
@@ -63,6 +65,21 @@ begin
     procedure
     begin
       TAccountRules.ValidateCreate(Req);
+    end,
+    EArgumentException);
+end;
+
+procedure TAccountRulesTests.ValidateUpdate_RejectsBlankName;
+var
+  Req: TUpdateAccountRequest;
+begin
+  Req.Name := '   ';
+  Req.Balance := StrToBcd('10.0000000000');
+
+  Assert.WillRaise(
+    procedure
+    begin
+      TAccountRules.ValidateUpdate(Req);
     end,
     EArgumentException);
 end;
