@@ -2,20 +2,43 @@
 
 ## Implemented
 
-- feature-first project structure
-- Dext Minimal API endpoint modules
-- Dext typed DI registrations
 - Delphi 13 target
-- FireDAC PostgreSQL connection factory and parameterized repository
-- PostgreSQL 17/18 schema using identity keys
-- `NUMERIC(28,10)` / `TBcd` financial path
-- JWT middleware bootstrap using Dext auth source API
-- development login feature using environment-provided credentials
+- Dext `WebApplication` bootstrap
+- typed Dext Minimal API endpoint modules
+- typed Dext DI registrations
+- native Dext Entity ORM persistence
+- `TAppDbContext : TDbContext`
+- `IDbSet<TAccount>` entity set
+- Dext Smart Properties (`Int64Type`, `StringType`, `FmtBcdType`)
+- Dext Entity mapping attributes including `[Precision(28, 10)]`
+- PostgreSQL 17/18 through Dext `.UsePostgreSQL(...)`
+- Dext/FireDAC connection pooling through `.WithPooling(True)`
+- Accounts CRUD with `Add`, `Find`, `ToList`, `Update`, `Remove`, `SaveChanges`
+- `Prototype.Entity<TAccount>` typed query for duplicate-code lookup
+- exact PostgreSQL `NUMERIC(28,10)` / Delphi `TBcd` financial path
+- native Dext JWT handler registration (`IJwtTokenHandler`, `TJwtTokenHandler`)
+- native `TClaimsBuilder`
+- native Dext route authorization metadata
 - Swagger/OpenAPI bootstrap with Bearer scheme
-- DUnitX application-service tests with in-memory repository
+- environment-based runtime configuration
+- DUnitX tests for database-independent account rules
 - PowerShell API smoke test
 - GitHub static quality guards
-- AI agent contract
+- Dext-native alignment document and AI agent contract
+
+## Removed during Dext-native refactor
+
+The first starter revision used generic Delphi infrastructure that obscured Dext's own architecture. The following were intentionally removed:
+
+- custom `IDbConnectionFactory`
+- manual `TFDConnection` factory
+- manual `TFDQuery` Accounts repository
+- `IAccountRepository` abstraction for ordinary CRUD
+- repository fake tests
+- custom JWT service wrapper
+- provider-specific application persistence code
+
+FireDAC remains the underlying PostgreSQL transport used by Dext Entity; it is no longer the primary application-level persistence API.
 
 ## Evidence anchor
 
@@ -23,27 +46,24 @@ Dext code patterns are designed against:
 
 `cesarliws/dext@412ed29207d2d1dc5d4a259a7739a615aed0c626`
 
+Primary evidence used for this refactor includes official Dext ORM, Web, DI and Auth skills plus the Smart Properties and TaskFlow examples at that revision.
+
+See `docs/DEXT_NATIVE_ALIGNMENT.md`.
+
 ## Not yet compile-validated in CI
 
-This public repository does not currently have a licensed Delphi 13 compiler runner available to GitHub-hosted CI. Therefore the Pascal project has **not** been claimed as CI compile-validated.
+This public repository does not currently have a licensed Delphi 13 compiler runner available to GitHub-hosted CI. Therefore the Pascal project is **not yet claimed as compiler-validated**.
 
-Before calling a release production-ready, perform a Delphi 13 build on a Windows machine with:
+Before a production-ready release:
 
-- Dext source/packages matching the pinned SHA;
-- FireDAC PostgreSQL driver available;
-- PostgreSQL native client (`libpq.dll`) available or configured through `DEXT_DB_VENDORLIB`;
-- DUnitX available;
-- PostgreSQL 17 or PostgreSQL 18 available for integration testing.
+1. clone on a Windows machine with Delphi 13;
+2. use Dext matching the pinned SHA;
+3. ensure FireDAC PostgreSQL support and `libpq.dll` are available;
+4. build `src/DextEnterpriseStarter.dpr`;
+5. build and run `tests/DextEnterpriseStarter.Tests.dpr`;
+6. run the PostgreSQL migrations against PostgreSQL 17;
+7. run API smoke tests;
+8. repeat the database/runtime validation against PostgreSQL 18;
+9. feed any general Dext API correction back into `DEXT_AI_CODING_PACK`.
 
-Any compiler/API mismatch found there must be fixed in this starter and, if it reveals a general Dext knowledge issue, fed back into `DEXT_AI_CODING_PACK`.
-
-## Next validation milestone
-
-1. Clone on the real Delphi 13 development machine.
-2. Build the application.
-3. Build and run DUnitX tests.
-4. Run `database/postgresql/01_schema.sql` and `02_seed.sql` against a clean PostgreSQL database.
-5. Start API with `.env.example` values adapted to the machine.
-6. Run `scripts/smoke.ps1`.
-7. Repeat database validation against PostgreSQL 17 and PostgreSQL 18.
-8. Record compile/runtime fixes as Golden Sample evidence.
+A successful static GitHub Action means architecture guards passed; it is not a substitute for a Delphi compiler build.
