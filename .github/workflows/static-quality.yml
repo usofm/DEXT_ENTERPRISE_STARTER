@@ -17,11 +17,46 @@ jobs:
         run: |
           set -euo pipefail
           test -f src/DextEnterpriseStarter.dpr
+          test -f src/Infrastructure/App.DbContext.pas
+          test -f src/Features/Accounts/Domain/Accounts.Models.pas
+          test -f src/Features/Accounts/Application/Accounts.Service.pas
           test -f database/postgresql/01_schema.sql
           test -f database/postgresql/02_seed.sql
-          test -f src/Features/Accounts/Infrastructure/Accounts.FireDACRepository.pas
+          test -f docs/DEXT_NATIVE_ALIGNMENT.md
           test -f AGENTS.md
           test -f .env.example
+
+      - name: Require Dext Entity architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -n 'TAppDbContext = class(TDbContext)' src/Infrastructure/App.DbContext.pas
+          grep -n 'IDbSet<TAccount>' src/Infrastructure/App.DbContext.pas
+          grep -n 'FmtBcdType' src/Features/Accounts/Domain/Accounts.Models.pas
+          grep -n 'Precision(28, 10)' src/Features/Accounts/Domain/Accounts.Models.pas
+          grep -n 'AddDbContext<TAppDbContext>' src/App.Startup.pas
+          grep -n 'UsePostgreSQL' src/App.Startup.pas
+          grep -n 'WithPooling(True)' src/App.Startup.pas
+          grep -n 'Prototype.Entity<TAccount>' src/Features/Accounts/Application/Accounts.Service.pas
+          grep -n 'FDb.Accounts.Update(Account)' src/Features/Accounts/Application/Accounts.Service.pas
+
+      - name: Reject manual CRUD persistence wrappers
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE 'TFDQuery|TFDConnection|IAccountRepository|IDbConnectionFactory' src --include='*.pas'; then
+            echo 'Manual persistence wrapper detected; ordinary CRUD must use Dext Entity ORM'
+            exit 1
+          fi
+
+      - name: Require native Dext auth
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -RIn 'IJwtTokenHandler' src --include='*.pas'
+          grep -RIn 'TJwtTokenHandler' src --include='*.pas'
+          grep -RIn 'TClaimsBuilder' src --include='*.pas'
+          grep -RIn 'RequireAuthorization' src/Features --include='*.pas'
 
       - name: Guard route syntax
         shell: bash
@@ -48,12 +83,11 @@ jobs:
           grep -RIn 'TBcd' src/Features/Accounts src/Shared --include='*.pas'
           grep -n 'NUMERIC(28,10)' database/postgresql/01_schema.sql
 
-      - name: Guard data-access profile
+      - name: Guard database profile
         shell: bash
         run: |
           set -euo pipefail
-          grep -RIn 'FireDAC.Phys.PG' src/Infrastructure --include='*.pas'
-          if grep -RInE 'UniDAC|TUniConnection|TUniQuery|FireDAC\.Phys\.FB|dpFirebird' src docs README.md --include='*.pas' --include='*.md'; then
+          if grep -RInE 'UniDAC|TUniConnection|TUniQuery|FireDAC\.Phys\.FB|dpFirebird' src --include='*.pas'; then
             echo 'Legacy UniDAC/Firebird reference detected'
             exit 1
           fi
