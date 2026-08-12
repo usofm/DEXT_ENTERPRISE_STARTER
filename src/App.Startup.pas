@@ -20,9 +20,9 @@ type
 implementation
 
 uses
+  Dext.Auth.JWT,
   App.Environment,
   App.DbContext,
-  Security.Jwt,
   Auth.Contracts,
   Auth.Service,
   Auth.Endpoints,
@@ -49,10 +49,10 @@ begin
 
   Services
     .AddDbContext<TAppDbContext>(ConfigureDatabase)
-    .AddSingleton<IJwtService, TJwtService>(
+    .AddSingleton<IJwtTokenHandler, TJwtTokenHandler>(
       function(Provider: IServiceProvider): TObject
       begin
-        Result := TJwtService.Create(JwtSecret, JwtIssuer, JwtAudience, 60);
+        Result := TJwtTokenHandler.Create(JwtSecret, JwtIssuer, JwtAudience, 60);
       end)
     .AddSingleton<IAuthService, TDevelopmentAuthService>
     .AddScoped<IAccountService, TAccountService>;
