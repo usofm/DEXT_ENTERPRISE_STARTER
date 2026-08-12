@@ -5,6 +5,7 @@ program DextEnterpriseStarter;
 uses
   System.SysUtils,
   Dext,
+  Dext.Entity,
   Dext.Auth.JWT,
   Dext.Auth.Middleware,
   Dext.Swagger.Middleware,
@@ -13,8 +14,7 @@ uses
   App.Startup in 'App.Startup.pas',
   App.Environment in 'Shared\App.Environment.pas',
   Financial.Bcd in 'Shared\Financial.Bcd.pas',
-  Database.Config in 'Infrastructure\Database.Config.pas',
-  Database.ConnectionFactory in 'Infrastructure\Database.ConnectionFactory.pas',
+  App.DbContext in 'Infrastructure\App.DbContext.pas',
   Security.Jwt in 'Infrastructure\Security.Jwt.pas',
   Auth.Contracts in 'Features\Auth\Application\Auth.Contracts.pas',
   Auth.Service in 'Features\Auth\Application\Auth.Service.pas',
@@ -22,7 +22,6 @@ uses
   Accounts.Models in 'Features\Accounts\Domain\Accounts.Models.pas',
   Accounts.Contracts in 'Features\Accounts\Application\Accounts.Contracts.pas',
   Accounts.Service in 'Features\Accounts\Application\Accounts.Service.pas',
-  Accounts.UniRepository in 'Features\Accounts\Infrastructure\Accounts.UniRepository.pas',
   Accounts.Endpoints in 'Features\Accounts\Api\Accounts.Endpoints.pas';
 
 var
@@ -46,7 +45,7 @@ begin
 
     OpenApi := TOpenAPIOptions.Default;
     OpenApi.Title := 'Dext Enterprise Starter API';
-    OpenApi.Description := 'Golden enterprise starter for Delphi, Dext, Firebird and UniDAC';
+    OpenApi.Description := 'Dext-native enterprise starter for Delphi 13 and PostgreSQL';
     OpenApi.Version := '1.0.0';
     OpenApi := OpenApi.WithBearerAuth('JWT', 'Bearer access token');
     TSwaggerExtensions.UseSwagger(App.Builder, OpenApi);
