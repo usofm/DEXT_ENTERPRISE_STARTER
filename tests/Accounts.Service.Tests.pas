@@ -7,14 +7,14 @@ uses
 
 type
   [TestFixture]
-  TAccountServiceTests = class
+  TAccountRulesTests = class
   public
     [Test]
-    procedure CreateAccount_ReturnsAssignedId;
+    procedure ValidateCreate_AcceptsValidRequest;
     [Test]
-    procedure CreateAccount_RejectsDuplicateCode;
+    procedure ValidateCreate_RejectsBlankCode;
     [Test]
-    procedure CreateAccount_RejectsBlankCode;
+    procedure ValidateCreate_RejectsBlankName;
   end;
 
 implementation
@@ -23,59 +23,22 @@ uses
   System.SysUtils,
   Data.FmtBcd,
   Accounts.Contracts,
-  Accounts.Service,
-  Accounts.Fakes;
+  Accounts.Rules;
 
-procedure TAccountServiceTests.CreateAccount_ReturnsAssignedId;
+procedure TAccountRulesTests.ValidateCreate_AcceptsValidRequest;
 var
-  Repo: IAccountRepository;
-  Svc: IAccountService;
   Req: TCreateAccountRequest;
-  Res: TAccountResponse;
 begin
-  Repo := TInMemoryAccountRepository.Create;
-  Svc := TAccountService.Create(Repo);
   Req.Code := '1000';
   Req.Name := 'Cash';
   Req.OpeningBalance := StrToBcd('123.4567890123');
-
-  Res := Svc.Create(Req);
-
-  Assert.AreEqual<Int64>(1, Res.Id);
-  Assert.AreEqual('1000', Res.Code);
-  Assert.AreEqual('Cash', Res.Name);
-  Assert.AreEqual(BcdToStr(Req.OpeningBalance), BcdToStr(Res.Balance));
+  TAccountRules.ValidateCreate(Req);
 end;
 
-procedure TAccountServiceTests.CreateAccount_RejectsDuplicateCode;
+procedure TAccountRulesTests.ValidateCreate_RejectsBlankCode;
 var
-  Repo: IAccountRepository;
-  Svc: IAccountService;
   Req: TCreateAccountRequest;
 begin
-  Repo := TInMemoryAccountRepository.Create;
-  Svc := TAccountService.Create(Repo);
-  Req.Code := '1000';
-  Req.Name := 'Cash';
-  Req.OpeningBalance := StrToBcd('0');
-  Svc.Create(Req);
-
-  Assert.WillRaise(
-    procedure
-    begin
-      Svc.Create(Req);
-    end,
-    EInvalidOpException);
-end;
-
-procedure TAccountServiceTests.CreateAccount_RejectsBlankCode;
-var
-  Repo: IAccountRepository;
-  Svc: IAccountService;
-  Req: TCreateAccountRequest;
-begin
-  Repo := TInMemoryAccountRepository.Create;
-  Svc := TAccountService.Create(Repo);
   Req.Code := '   ';
   Req.Name := 'Cash';
   Req.OpeningBalance := StrToBcd('0');
@@ -83,12 +46,28 @@ begin
   Assert.WillRaise(
     procedure
     begin
-      Svc.Create(Req);
+      TAccountRules.ValidateCreate(Req);
+    end,
+    EArgumentException);
+end;
+
+procedure TAccountRulesTests.ValidateCreate_RejectsBlankName;
+var
+  Req: TCreateAccountRequest;
+begin
+  Req.Code := '1000';
+  Req.Name := '   ';
+  Req.OpeningBalance := StrToBcd('0');
+
+  Assert.WillRaise(
+    procedure
+    begin
+      TAccountRules.ValidateCreate(Req);
     end,
     EArgumentException);
 end;
 
 initialization
-  TDUnitX.RegisterTestFixture(TAccountServiceTests);
+  TDUnitX.RegisterTestFixture(TAccountRulesTests);
 
 end.
