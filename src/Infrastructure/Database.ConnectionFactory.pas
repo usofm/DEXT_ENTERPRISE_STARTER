@@ -15,8 +15,6 @@ type
   TFDConnectionFactory = class(TInterfacedObject, IDbConnectionFactory)
   private
     FConfig: TDatabaseConfig;
-    procedure ConfigureFirebird(const AConnection: TFDConnection);
-    procedure ConfigurePostgreSQL(const AConnection: TFDConnection);
   public
     constructor Create(const AConfig: TDatabaseConfig);
     function CreateConnection: TFDConnection;
@@ -25,11 +23,7 @@ type
 implementation
 
 uses
-  System.SysUtils,
-  FireDAC.Stan.Def,
   FireDAC.Phys,
-  FireDAC.Phys.FB,
-  FireDAC.Phys.FBDef,
   FireDAC.Phys.PG,
   FireDAC.Phys.PGDef;
 
@@ -39,35 +33,6 @@ begin
   FConfig := AConfig;
 end;
 
-procedure TFDConnectionFactory.ConfigureFirebird(const AConnection: TFDConnection);
-begin
-  AConnection.Params.Clear;
-  AConnection.Params.DriverID := 'FB';
-  AConnection.Params.Values['Server'] := FConfig.Server;
-  AConnection.Params.Values['Port'] := FConfig.Port.ToString;
-  AConnection.Params.Database := FConfig.Database;
-  AConnection.Params.UserName := FConfig.Username;
-  AConnection.Params.Password := FConfig.Password;
-  AConnection.Params.Values['CharacterSet'] := FConfig.Charset;
-  AConnection.Params.Values['Protocol'] := 'TCPIP';
-  if FConfig.VendorLib <> '' then
-    AConnection.Params.Values['VendorLib'] := FConfig.VendorLib;
-end;
-
-procedure TFDConnectionFactory.ConfigurePostgreSQL(const AConnection: TFDConnection);
-begin
-  AConnection.Params.Clear;
-  AConnection.Params.DriverID := 'PG';
-  AConnection.Params.Values['Server'] := FConfig.Server;
-  AConnection.Params.Values['Port'] := FConfig.Port.ToString;
-  AConnection.Params.Database := FConfig.Database;
-  AConnection.Params.UserName := FConfig.Username;
-  AConnection.Params.Password := FConfig.Password;
-  AConnection.Params.Values['CharacterSet'] := FConfig.Charset;
-  if FConfig.VendorLib <> '' then
-    AConnection.Params.Values['VendorLib'] := FConfig.VendorLib;
-end;
-
 function TFDConnectionFactory.CreateConnection: TFDConnection;
 begin
   Result := TFDConnection.Create(nil);
@@ -75,14 +40,17 @@ begin
   Result.ResourceOptions.SilentMode := True;
 
   try
-    case FConfig.Provider of
-      dpFirebird:
-        ConfigureFirebird(Result);
-      dpPostgreSQL:
-        ConfigurePostgreSQL(Result);
-    else
-      raise EInvalidOpException.Create('Unsupported database provider');
-    end;
+    Result.Params.Clear;
+    Result.Params.DriverID := 'PG';
+    Result.Params.Values['Server'] := FConfig.Server;
+    Result.Params.Values['Port'] := FConfig.Port.ToString;
+    Result.Params.Database := FConfig.Database;
+    Result.Params.UserName := FConfig.Username;
+    Result.Params.Password := FConfig.Password;
+    Result.Params.Values['CharacterSet'] := FConfig.Charset;
+
+    if FConfig.VendorLib <> '' then
+      Result.Params.Values['VendorLib'] := FConfig.VendorLib;
 
     Result.Connected := True;
   except
