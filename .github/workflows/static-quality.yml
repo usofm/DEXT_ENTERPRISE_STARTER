@@ -51,7 +51,7 @@ jobs:
         run: |
           set -euo pipefail
           test ! -f config/appsettings.json
-          if git grep -nE 'DEXT_JWT_SECRET=.{32,}' -- ':!*.example' ':!.env.example'; then
+          if git grep -nE 'DEXT_JWT_SECRET=.{32,}' -- ':!*.example' ':!.env.example' ':!.github/workflows/static-quality.yml'; then
             echo 'Possible committed JWT secret detected'
             exit 1
           fi
