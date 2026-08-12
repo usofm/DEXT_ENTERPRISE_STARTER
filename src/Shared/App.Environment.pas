@@ -40,22 +40,9 @@ begin
 end;
 
 class function TAppEnvironment.Database: TDatabaseConfig;
-var
-  ProviderName: string;
-  DefaultPort: Integer;
 begin
-  ProviderName := Read('DEXT_DB_PROVIDER', 'firebird');
-  Result.Provider := TDatabaseConfig.ProviderFromString(ProviderName);
-
-  case Result.Provider of
-    dpFirebird: DefaultPort := 3050;
-    dpPostgreSQL: DefaultPort := 5432;
-  else
-    DefaultPort := 0;
-  end;
-
   Result.Server := Read('DEXT_DB_SERVER', 'localhost');
-  Result.Port := StrToIntDef(Read('DEXT_DB_PORT', IntToStr(DefaultPort)), DefaultPort);
+  Result.Port := StrToIntDef(Read('DEXT_DB_PORT', '5432'), 5432);
   Result.Database := Require('DEXT_DB_DATABASE');
   Result.Username := Require('DEXT_DB_USERNAME');
   Result.Password := Require('DEXT_DB_PASSWORD');
