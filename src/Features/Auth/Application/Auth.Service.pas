@@ -13,21 +13,22 @@ type
     FUsername: string;
     FPassword: string;
   public
-    constructor Create(const AJwt: IJwtService; const AUsername, APassword: string);
+    constructor Create(const AJwt: IJwtService);
     function Login(const ARequest: TLoginRequest; out AResponse: TLoginResponse): Boolean;
   end;
 
 implementation
 
 uses
-  System.SysUtils;
+  System.SysUtils,
+  App.Environment;
 
-constructor TDevelopmentAuthService.Create(const AJwt: IJwtService; const AUsername, APassword: string);
+constructor TDevelopmentAuthService.Create(const AJwt: IJwtService);
 begin
   inherited Create;
   FJwt := AJwt;
-  FUsername := AUsername;
-  FPassword := APassword;
+  FUsername := TAppEnvironment.DevUsername;
+  FPassword := TAppEnvironment.DevPassword;
 end;
 
 function TDevelopmentAuthService.Login(const ARequest: TLoginRequest; out AResponse: TLoginResponse): Boolean;
