@@ -40,13 +40,27 @@ begin
 end;
 
 class function TAppEnvironment.Database: TDatabaseConfig;
+var
+  ProviderName: string;
+  DefaultPort: Integer;
 begin
+  ProviderName := Read('DEXT_DB_PROVIDER', 'firebird');
+  Result.Provider := TDatabaseConfig.ProviderFromString(ProviderName);
+
+  case Result.Provider of
+    dpFirebird: DefaultPort := 3050;
+    dpPostgreSQL: DefaultPort := 5432;
+  else
+    DefaultPort := 0;
+  end;
+
   Result.Server := Read('DEXT_DB_SERVER', 'localhost');
-  Result.Port := StrToIntDef(Read('DEXT_DB_PORT', '3050'), 3050);
+  Result.Port := StrToIntDef(Read('DEXT_DB_PORT', IntToStr(DefaultPort)), DefaultPort);
   Result.Database := Require('DEXT_DB_DATABASE');
-  Result.Username := Read('DEXT_DB_USERNAME', 'SYSDBA');
+  Result.Username := Require('DEXT_DB_USERNAME');
   Result.Password := Require('DEXT_DB_PASSWORD');
   Result.Charset := Read('DEXT_DB_CHARSET', 'UTF8');
+  Result.VendorLib := Read('DEXT_DB_VENDORLIB', '');
 end;
 
 class function TAppEnvironment.JwtSecret: string;
