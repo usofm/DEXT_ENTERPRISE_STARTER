@@ -26,6 +26,15 @@ jobs:
           test -f AGENTS.md
           test -f .env.example
 
+      - name: Require official Dext startup composition
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -n 'TAppStartup = class(TInterfacedObject, IStartup)' src/App.Startup.pas
+          grep -n 'procedure ConfigureServices(const Services: TDextServices; const Configuration: IConfiguration)' src/App.Startup.pas
+          grep -n 'procedure Configure(const App: IWebApplication)' src/App.Startup.pas
+          grep -n 'App.UseStartup(TAppStartup.Create)' src/DextEnterpriseStarter.dpr
+
       - name: Require Dext Entity architecture
         shell: bash
         run: |
@@ -56,6 +65,7 @@ jobs:
           grep -RIn 'IJwtTokenHandler' src --include='*.pas'
           grep -RIn 'TJwtTokenHandler' src --include='*.pas'
           grep -RIn 'TClaimsBuilder' src --include='*.pas'
+          grep -RIn 'UseJwtAuthentication' src --include='*.pas'
           grep -RIn 'RequireAuthorization' src/Features --include='*.pas'
 
       - name: Guard route syntax
