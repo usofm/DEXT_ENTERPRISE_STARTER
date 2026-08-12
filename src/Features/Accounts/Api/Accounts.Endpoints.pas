@@ -46,6 +46,26 @@ begin
       Result := Results.Created('/api/accounts/' + R.Id.ToString, R);
     end)
     .RequireAuthorization('Admin');
+
+  Builder.MapPut<TUpdateAccountRequest, IAccountService, Int64, IResult>('/api/accounts/{id}',
+    function(Req: TUpdateAccountRequest; Svc: IAccountService; Id: Int64): IResult
+    var
+      R: TAccountResponse;
+    begin
+      if Svc.Update(Id, Req, R) then
+        Exit(Results.Ok(R));
+      Result := Results.NotFound('Account not found');
+    end)
+    .RequireAuthorization('Admin');
+
+  Builder.MapDelete<IAccountService, Int64, IResult>('/api/accounts/{id}',
+    function(Svc: IAccountService; Id: Int64): IResult
+    begin
+      if Svc.Delete(Id) then
+        Exit(Results.NoContent);
+      Result := Results.NotFound('Account not found');
+    end)
+    .RequireAuthorization('Admin');
 end;
 
 end.
