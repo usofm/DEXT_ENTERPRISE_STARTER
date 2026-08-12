@@ -26,7 +26,7 @@ uses
   Auth.Endpoints,
   Accounts.Contracts,
   Accounts.Service,
-  Accounts.UniRepository,
+  Accounts.FireDACRepository,
   Accounts.Endpoints;
 
 class procedure TAppStartup.ConfigureServices(const Services: TDextServices);
@@ -42,10 +42,10 @@ begin
   JwtAudience := TAppEnvironment.JwtAudience;
 
   Services
-    .AddSingleton<IDbConnectionFactory, TUniConnectionFactory>(
+    .AddSingleton<IDbConnectionFactory, TFDConnectionFactory>(
       function(Provider: IServiceProvider): TObject
       begin
-        Result := TUniConnectionFactory.Create(DbConfig);
+        Result := TFDConnectionFactory.Create(DbConfig);
       end)
     .AddSingleton<IJwtService, TJwtService>(
       function(Provider: IServiceProvider): TObject
@@ -53,7 +53,7 @@ begin
         Result := TJwtService.Create(JwtSecret, JwtIssuer, JwtAudience, 60);
       end)
     .AddSingleton<IAuthService, TDevelopmentAuthService>
-    .AddScoped<IAccountRepository, TUniAccountRepository>
+    .AddScoped<IAccountRepository, TFireDACAccountRepository>
     .AddScoped<IAccountService, TAccountService>;
 end;
 
