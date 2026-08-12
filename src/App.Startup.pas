@@ -35,15 +35,11 @@ var
   JwtSecret: string;
   JwtIssuer: string;
   JwtAudience: string;
-  DevUsername: string;
-  DevPassword: string;
 begin
   DbConfig := TAppEnvironment.Database;
   JwtSecret := TAppEnvironment.JwtSecret;
   JwtIssuer := TAppEnvironment.JwtIssuer;
   JwtAudience := TAppEnvironment.JwtAudience;
-  DevUsername := TAppEnvironment.DevUsername;
-  DevPassword := TAppEnvironment.DevPassword;
 
   Services
     .AddSingleton<IDbConnectionFactory, TUniConnectionFactory>(
@@ -56,14 +52,7 @@ begin
       begin
         Result := TJwtService.Create(JwtSecret, JwtIssuer, JwtAudience, 60);
       end)
-    .AddSingleton<IAuthService, TDevelopmentAuthService>(
-      function(Provider: IServiceProvider): TObject
-      var
-        Jwt: IJwtService;
-      begin
-        Jwt := Provider.GetService(TServiceType.FromInterface(IJwtService)) as IJwtService;
-        Result := TDevelopmentAuthService.Create(Jwt, DevUsername, DevPassword);
-      end)
+    .AddSingleton<IAuthService, TDevelopmentAuthService>
     .AddScoped<IAccountRepository, TUniAccountRepository>
     .AddScoped<IAccountService, TAccountService>;
 end;
