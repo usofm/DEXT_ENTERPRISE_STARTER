@@ -1,6 +1,6 @@
 # DEXT_ENTERPRISE_STARTER
 
-Golden enterprise starter for **Delphi 12 + Dext + Firebird 5 + UniDAC**.
+Golden enterprise starter for **Delphi 13 + Dext + FireDAC**, supporting both **Firebird 5** and **PostgreSQL 17/18** from one codebase.
 
 This repository is the practical companion to `usofm/DEXT_AI_CODING_PACK` and is intended to validate real AI-assisted Dext development against a production-style architecture.
 
@@ -9,20 +9,21 @@ This repository is the practical companion to `usofm/DEXT_AI_CODING_PACK` and is
 ```text
 Dext upstream: cesarliws/dext
 Audited SHA:   412ed29207d2d1dc5d4a259a7739a615aed0c626
-Delphi:        12+
-Database:      Firebird 5
-Data access:   UniDAC
+Delphi:        13
+Data access:   FireDAC
+Databases:     Firebird 5 | PostgreSQL 17 | PostgreSQL 18
 ```
 
-Do not silently copy syntax from a newer Dext `main` without reviewing compatibility first.
+The database provider is selected at runtime through configuration. Application and Domain code must not branch on the database engine.
 
 ## Implemented
 
 - Feature-first / Clean Architecture-inspired layout
 - Thin Dext Minimal API endpoint modules
 - Typed Dext dependency injection
-- Firebird 5 identity schema
-- UniDAC connection factory and parameterized repository
+- FireDAC connection factory
+- Runtime-selectable Firebird/PostgreSQL provider
+- Firebird 5 and PostgreSQL 17/18 schema profiles
 - Financial `NUMERIC(28,10)` + Delphi `TBcd`
 - JWT middleware bootstrap using Dext auth APIs
 - Development login feature with credentials supplied only by environment variables
@@ -31,7 +32,7 @@ Do not silently copy syntax from a newer Dext `main` without reviewing compatibi
 - DUnitX application-service tests with an in-memory repository
 - PowerShell API smoke test
 - GitHub static quality guards
-- AI agent contract linked conceptually to `DEXT_AI_CODING_PACK`
+- AI agent contract linked to `DEXT_AI_CODING_PACK`
 
 See `docs/IMPLEMENTATION_STATUS.md` for validation status and known limits.
 
@@ -56,27 +57,63 @@ src/
         ├── Domain/
         ├── Application/
         ├── Infrastructure/
+        │   └── Accounts.FireDACRepository.pas
         └── Api/
 
 database/
-├── 01_schema.sql
-└── 02_seed.sql
-
-tests/
-├── DextEnterpriseStarter.Tests.dpr
-├── Accounts.Fakes.pas
-└── Accounts.Service.Tests.pas
-
-scripts/
-└── smoke.ps1
+├── firebird/
+│   ├── 01_schema.sql
+│   └── 02_seed.sql
+└── postgresql/
+    ├── 01_schema.sql
+    └── 02_seed.sql
 ```
+
+## Database Provider Selection
+
+Use `DEXT_DB_PROVIDER`:
+
+```text
+firebird
+postgresql
+```
+
+Firebird example:
+
+```text
+DEXT_DB_PROVIDER=firebird
+DEXT_DB_SERVER=localhost
+DEXT_DB_PORT=3050
+DEXT_DB_DATABASE=C:/Data/enterprise.fdb
+DEXT_DB_USERNAME=SYSDBA
+DEXT_DB_PASSWORD=change-me
+DEXT_DB_CHARSET=UTF8
+DEXT_DB_VENDORLIB=C:/Firebird/firebird.conf/../fbclient.dll
+```
+
+PostgreSQL example:
+
+```text
+DEXT_DB_PROVIDER=postgresql
+DEXT_DB_SERVER=localhost
+DEXT_DB_PORT=5432
+DEXT_DB_DATABASE=enterprise
+DEXT_DB_USERNAME=app_user
+DEXT_DB_PASSWORD=change-me
+DEXT_DB_CHARSET=UTF8
+DEXT_DB_VENDORLIB=C:/PostgreSQL/bin/libpq.dll
+```
+
+`DEXT_DB_VENDORLIB` is optional when FireDAC can already resolve the native client library.
 
 ## Core Rules
 
 - Business rules live in Application/Domain, never in HTTP handlers.
-- UniDAC is isolated under Infrastructure.
+- FireDAC is isolated under Infrastructure.
+- Database-specific differences are isolated to configuration, SQL migrations, and provider adapters.
 - API endpoints are thin transport adapters.
-- Financial data uses Firebird `NUMERIC(28,10)` and Delphi `TBcd`.
+- Financial data uses database `NUMERIC(28,10)` and Delphi `TBcd` end-to-end.
+- Do not use `Double` or `Currency` as the authoritative financial storage type.
 - Dext route parameters use `{id}`, never `:id`.
 - Use Dext generic handler DI / constructor injection; never request service-locator patterns.
 - Keep `Dext.Web` last among Dext helper units where class-helper order matters.
@@ -96,72 +133,51 @@ GET  /swagger
 GET  /swagger.json
 ```
 
-## Environment
-
-Use `.env.example` as the variable reference. The application currently reads process environment variables directly.
-
-Important variables include:
-
-```text
-DEXT_DB_DATABASE
-DEXT_DB_PASSWORD
-DEXT_JWT_SECRET
-DEXT_DEV_ADMIN_USERNAME
-DEXT_DEV_ADMIN_PASSWORD
-```
-
-Never commit the real values.
-
 ## Database Setup
 
-1. Create a Firebird 5 database.
-2. Run `database/01_schema.sql`.
-3. Run `database/02_seed.sql`.
-4. Use a least-privilege application database user for production; do not deploy with SYSDBA.
+For Firebird 5:
+
+```text
+database/firebird/01_schema.sql
+database/firebird/02_seed.sql
+```
+
+For PostgreSQL 17/18:
+
+```text
+database/postgresql/01_schema.sql
+database/postgresql/02_seed.sql
+```
+
+Use a least-privilege application database user in production.
 
 ## Delphi Build
 
 Install/configure:
 
-- Delphi 12+
+- Delphi 13
 - Dext matching the pinned SHA
-- UniDAC with Firebird/InterBase provider
+- FireDAC
+- Firebird 5 client and/or PostgreSQL client library
 - DUnitX
 
-Then build:
+Build:
 
 ```text
 src/DextEnterpriseStarter.dpr
 tests/DextEnterpriseStarter.Tests.dpr
 ```
 
-This repository currently has static GitHub CI but not a licensed Delphi compiler runner. Therefore successful GitHub CI is **not** a substitute for a real Delphi build. See `docs/IMPLEMENTATION_STATUS.md`.
+The public GitHub CI currently performs static checks; it is not a substitute for compiling with a licensed Delphi 13 installation.
 
-## Smoke Test
+## Validation Matrix
 
-After starting the API with environment variables configured:
+The Golden Starter should ultimately be validated against:
 
-```powershell
-./scripts/smoke.ps1
+```text
+Delphi 13 + FireDAC + Firebird 5
+Delphi 13 + FireDAC + PostgreSQL 17
+Delphi 13 + FireDAC + PostgreSQL 18
 ```
-
-The script checks health, login, authenticated identity and account listing.
-
-## Security
-
-Read `docs/SECURITY.md` before treating this as production-ready. `TDevelopmentAuthService` is intentionally a local-development identity provider and must be replaced by a real user/identity implementation for production.
-
-## Next Milestones
-
-- compile and run on the real Delphi 12 + UniDAC development machine
-- fix any compiler/API mismatches found during that validation
-- add RFC 9457 Problem Details exception mapping
-- add DTO validation
-- introduce explicit transaction / Unit-of-Work patterns for multi-write business operations
-- add Firebird integration tests
-- add audit logging
-- add readiness/dependency health checks
-- add optional multi-tenancy profile
-- add Windows self-hosted Delphi CI when a licensed runner is available
 
 Any general Dext rule discovered during real compilation should be fed back into `DEXT_AI_CODING_PACK`.
