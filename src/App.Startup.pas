@@ -17,8 +17,13 @@ type
 implementation
 
 uses
+  App.Environment,
   Database.Config,
   Database.ConnectionFactory,
+  Security.Jwt,
+  Auth.Contracts,
+  Auth.Service,
+  Auth.Endpoints,
   Accounts.Contracts,
   Accounts.Service,
   Accounts.UniRepository,
@@ -27,20 +32,37 @@ uses
 class procedure TAppStartup.ConfigureServices(const Services: TDextServices);
 var
   DbConfig: TDatabaseConfig;
+  JwtSecret: string;
+  JwtIssuer: string;
+  JwtAudience: string;
+  DevUsername: string;
+  DevPassword: string;
 begin
-  // TODO: replace with strongly typed configuration/environment binding.
-  DbConfig.Server := 'localhost';
-  DbConfig.Port := 3050;
-  DbConfig.Database := 'C:\\Data\\enterprise.fdb';
-  DbConfig.Username := 'SYSDBA';
-  DbConfig.Password := 'change-me';
-  DbConfig.Charset := 'UTF8';
+  DbConfig := TAppEnvironment.Database;
+  JwtSecret := TAppEnvironment.JwtSecret;
+  JwtIssuer := TAppEnvironment.JwtIssuer;
+  JwtAudience := TAppEnvironment.JwtAudience;
+  DevUsername := TAppEnvironment.DevUsername;
+  DevPassword := TAppEnvironment.DevPassword;
 
   Services
     .AddSingleton<IDbConnectionFactory, TUniConnectionFactory>(
       function(Provider: IServiceProvider): TObject
       begin
         Result := TUniConnectionFactory.Create(DbConfig);
+      end)
+    .AddSingleton<IJwtService, TJwtService>(
+      function(Provider: IServiceProvider): TObject
+      begin
+        Result := TJwtService.Create(JwtSecret, JwtIssuer, JwtAudience, 60);
+      end)
+    .AddSingleton<IAuthService, TDevelopmentAuthService>(
+      function(Provider: IServiceProvider): TObject
+      var
+        Jwt: IJwtService;
+      begin
+        Jwt := Provider.GetService(TServiceType.FromInterface(IJwtService)) as IJwtService;
+        Result := TDevelopmentAuthService.Create(Jwt, DevUsername, DevPassword);
       end)
     .AddScoped<IAccountRepository, TUniAccountRepository>
     .AddScoped<IAccountService, TAccountService>;
@@ -54,6 +76,7 @@ begin
       Result := Results.Ok('healthy');
     end);
 
+  TAuthEndpoints.MapEndpoints(Builder);
   TAccountEndpoints.MapEndpoints(Builder);
 end;
 
