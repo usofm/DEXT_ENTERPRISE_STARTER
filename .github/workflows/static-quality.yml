@@ -1,0 +1,57 @@
+name: Starter Static Quality
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  static-quality:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify required files
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f src/DextEnterpriseStarter.dpr
+          test -f database/01_schema.sql
+          test -f AGENTS.md
+          test -f .env.example
+
+      - name: Guard route syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE "'/[^']*:[A-Za-z_][A-Za-z0-9_]*" src --include='*.pas'; then
+            echo 'Legacy :param route syntax detected'
+            exit 1
+          fi
+
+      - name: Guard service locator in HTTP layer
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE 'RequestServices\.GetService|Context\.Services\.GetService' src/Features --include='*.pas'; then
+            echo 'Request service locator detected'
+            exit 1
+          fi
+
+      - name: Guard financial precision
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -RIn 'TBcd' src/Features/Accounts src/Shared --include='*.pas'
+          grep -n 'NUMERIC(28,10)' database/01_schema.sql
+
+      - name: Ensure secrets are not committed
+        shell: bash
+        run: |
+          set -euo pipefail
+          test ! -f config/appsettings.json
+          if git grep -nE 'DEXT_JWT_SECRET=.{32,}' -- ':!*.example' ':!.env.example'; then
+            echo 'Possible committed JWT secret detected'
+            exit 1
+          fi
