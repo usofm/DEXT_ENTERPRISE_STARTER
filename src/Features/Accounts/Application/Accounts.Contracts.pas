@@ -3,8 +3,7 @@ unit Accounts.Contracts;
 interface
 
 uses
-  Data.FmtBcd,
-  Accounts.Models;
+  Data.FmtBcd;
 
 type
   TCreateAccountRequest = record
@@ -20,14 +19,6 @@ type
     Balance: TBcd;
   end;
 
-  IAccountRepository = interface
-    ['{A70720DA-7EC1-47E2-8181-2BF9D3BD2BEA}']
-    function GetById(AId: Int64; out AAccount: TAccount): Boolean;
-    function GetByCode(const ACode: string; out AAccount: TAccount): Boolean;
-    function List: TArray<TAccount>;
-    function Insert(const AAccount: TAccount): Int64;
-  end;
-
   IAccountService = interface
     ['{3A33E982-34E6-464D-A849-E23313A0DC65}']
     function GetById(AId: Int64; out AResponse: TAccountResponse): Boolean;
@@ -36,4 +27,5 @@ type
   end;
 
 implementation
+
 end.
