@@ -4,13 +4,14 @@ interface
 
 uses
   Accounts.Contracts,
+  Accounts.Models,
   App.DbContext;
 
 type
   TAccountService = class(TInterfacedObject, IAccountService)
   private
     FDb: TAppDbContext;
-    class function ToResponse(const AAccount: TObject): TAccountResponse; static;
+    class function ToResponse(const AAccount: TAccount): TAccountResponse; static;
   public
     constructor Create(ADb: TAppDbContext);
     function GetById(AId: Int64; out AResponse: TAccountResponse): Boolean;
@@ -24,7 +25,7 @@ uses
   System.SysUtils,
   Dext.Collections,
   Dext.Entity.Prototype,
-  Accounts.Models;
+  Accounts.Rules;
 
 constructor TAccountService.Create(ADb: TAppDbContext);
 begin
@@ -32,15 +33,12 @@ begin
   FDb := ADb;
 end;
 
-class function TAccountService.ToResponse(const AAccount: TObject): TAccountResponse;
-var
-  Account: TAccount;
+class function TAccountService.ToResponse(const AAccount: TAccount): TAccountResponse;
 begin
-  Account := TAccount(AAccount);
-  Result.Id := Account.Id;
-  Result.Code := Account.Code;
-  Result.Name := Account.Name;
-  Result.Balance := Account.Balance;
+  Result.Id := AAccount.Id;
+  Result.Code := AAccount.Code;
+  Result.Name := AAccount.Name;
+  Result.Balance := AAccount.Balance;
 end;
 
 function TAccountService.GetById(AId: Int64; out AResponse: TAccountResponse): Boolean;
@@ -67,17 +65,14 @@ end;
 function TAccountService.Create(const ARequest: TCreateAccountRequest): TAccountResponse;
 var
   Account: TAccount;
-  A: TAccount;
+  P: TAccount;
   Existing: IList<TAccount>;
 begin
-  if Trim(ARequest.Code) = '' then
-    raise EArgumentException.Create('Account code is required');
-  if Trim(ARequest.Name) = '' then
-    raise EArgumentException.Create('Account name is required');
+  TAccountRules.ValidateCreate(ARequest);
 
-  A := Prototype.Entity<TAccount>;
+  P := Prototype.Entity<TAccount>;
   Existing := FDb.Accounts
-    .Where(A.Code = Trim(ARequest.Code))
+    .Where(P.Code = Trim(ARequest.Code))
     .ToList;
 
   if Existing.Count > 0 then
