@@ -15,17 +15,16 @@ uses
   App.Environment in 'Shared\App.Environment.pas',
   Financial.Bcd in 'Shared\Financial.Bcd.pas',
   App.DbContext in 'Infrastructure\App.DbContext.pas',
-  Security.Jwt in 'Infrastructure\Security.Jwt.pas',
   Auth.Contracts in 'Features\Auth\Application\Auth.Contracts.pas',
   Auth.Service in 'Features\Auth\Application\Auth.Service.pas',
   Auth.Endpoints in 'Features\Auth\Api\Auth.Endpoints.pas',
   Accounts.Models in 'Features\Accounts\Domain\Accounts.Models.pas',
   Accounts.Contracts in 'Features\Accounts\Application\Accounts.Contracts.pas',
+  Accounts.Rules in 'Features\Accounts\Application\Accounts.Rules.pas',
   Accounts.Service in 'Features\Accounts\Application\Accounts.Service.pas',
   Accounts.Endpoints in 'Features\Accounts\Api\Accounts.Endpoints.pas';
 
 var
-  JwtOptions: TJwtOptions;
   OpenApi: TOpenAPIOptions;
   Port: Integer;
 begin
@@ -35,11 +34,10 @@ begin
     var App := WebApplication;
     TAppStartup.ConfigureServices(App.Services);
 
-    JwtOptions := TJwtOptions.Create(TAppEnvironment.JwtSecret);
-    JwtOptions.Issuer := TAppEnvironment.JwtIssuer;
-    JwtOptions.Audience := TAppEnvironment.JwtAudience;
-    JwtOptions.ExpirationMinutes := 60;
-    TApplicationBuilderJwtExtensions.UseJwtAuthentication(App.GetApplicationBuilder, JwtOptions);
+    App.Builder.UseJwtAuthentication(
+      JwtOptions(TAppEnvironment.JwtSecret)
+        .Issuer(TAppEnvironment.JwtIssuer)
+        .Audience(TAppEnvironment.JwtAudience));
 
     TAppStartup.MapEndpoints(App.Builder);
 
