@@ -5,11 +5,8 @@ program DextEnterpriseStarter;
 uses
   System.SysUtils,
   Dext,
+  Dext.Utils,
   Dext.Entity,
-  Dext.Auth.JWT,
-  Dext.Auth.Middleware,
-  Dext.Swagger.Middleware,
-  Dext.OpenAPI.Types,
   Dext.Web,
   App.Startup in 'App.Startup.pas',
   App.Environment in 'Shared\App.Environment.pas',
@@ -25,32 +22,18 @@ uses
   Accounts.Endpoints in 'Features\Accounts\Api\Accounts.Endpoints.pas';
 
 var
-  OpenApi: TOpenAPIOptions;
+  App: IWebApplication;
   Port: Integer;
 begin
+  SetConsoleCharSet;
   try
-    SetConsoleCharSet;
-
-    var App := WebApplication;
-    TAppStartup.ConfigureServices(App.Services);
-
-    App.Builder.UseJwtAuthentication(
-      JwtOptions(TAppEnvironment.JwtSecret)
-        .Issuer(TAppEnvironment.JwtIssuer)
-        .Audience(TAppEnvironment.JwtAudience));
-
-    TAppStartup.MapEndpoints(App.Builder);
-
-    OpenApi := TOpenAPIOptions.Default;
-    OpenApi.Title := 'Dext Enterprise Starter API';
-    OpenApi.Description := 'Dext-native enterprise starter for Delphi 13 and PostgreSQL';
-    OpenApi.Version := '1.0.0';
-    OpenApi := OpenApi.WithBearerAuth('JWT', 'Bearer access token');
-    TSwaggerExtensions.UseSwagger(App.Builder, OpenApi);
+    App := TDextApplication.Create;
+    App.UseStartup(TAppStartup.Create);
 
     Port := TAppEnvironment.ServerPort;
     Writeln(Format('Dext Enterprise Starter listening on http://localhost:%d', [Port]));
     Writeln(Format('Swagger UI: http://localhost:%d/swagger', [Port]));
+
     App.Run(Port);
   except
     on E: Exception do
