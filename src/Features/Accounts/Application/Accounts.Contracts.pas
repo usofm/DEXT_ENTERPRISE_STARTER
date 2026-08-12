@@ -12,6 +12,11 @@ type
     OpeningBalance: TBcd;
   end;
 
+  TUpdateAccountRequest = record
+    Name: string;
+    Balance: TBcd;
+  end;
+
   TAccountResponse = record
     Id: Int64;
     Code: string;
@@ -24,6 +29,8 @@ type
     function GetById(AId: Int64; out AResponse: TAccountResponse): Boolean;
     function List: TArray<TAccountResponse>;
     function Create(const ARequest: TCreateAccountRequest): TAccountResponse;
+    function Update(AId: Int64; const ARequest: TUpdateAccountRequest; out AResponse: TAccountResponse): Boolean;
+    function Delete(AId: Int64): Boolean;
   end;
 
 implementation
