@@ -17,6 +17,8 @@ type
     function GetById(AId: Int64; out AResponse: TAccountResponse): Boolean;
     function List: TArray<TAccountResponse>;
     function Create(const ARequest: TCreateAccountRequest): TAccountResponse;
+    function Update(AId: Int64; const ARequest: TUpdateAccountRequest; out AResponse: TAccountResponse): Boolean;
+    function Delete(AId: Int64): Boolean;
   end;
 
 implementation
@@ -87,6 +89,39 @@ begin
   FDb.SaveChanges;
 
   Result := ToResponse(Account);
+end;
+
+function TAccountService.Update(AId: Int64; const ARequest: TUpdateAccountRequest;
+  out AResponse: TAccountResponse): Boolean;
+var
+  Account: TAccount;
+begin
+  TAccountRules.ValidateUpdate(ARequest);
+
+  Account := FDb.Accounts.Find(AId);
+  Result := Account <> nil;
+  if not Result then
+    Exit;
+
+  Account.Name := Trim(ARequest.Name);
+  Account.Balance := ARequest.Balance;
+
+  FDb.Accounts.Update(Account);
+  FDb.SaveChanges;
+  AResponse := ToResponse(Account);
+end;
+
+function TAccountService.Delete(AId: Int64): Boolean;
+var
+  Account: TAccount;
+begin
+  Account := FDb.Accounts.Find(AId);
+  Result := Account <> nil;
+  if not Result then
+    Exit;
+
+  FDb.Accounts.Remove(Account);
+  FDb.SaveChanges;
 end;
 
 end.
