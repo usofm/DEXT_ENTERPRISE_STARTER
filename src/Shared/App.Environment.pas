@@ -2,16 +2,13 @@ unit App.Environment;
 
 interface
 
-uses
-  Database.Config;
-
 type
   TAppEnvironment = record
   private
     class function Read(const AName, ADefault: string): string; static;
     class function Require(const AName: string): string; static;
   public
-    class function Database: TDatabaseConfig; static;
+    class function DatabaseConnectionString: string; static;
     class function JwtSecret: string; static;
     class function JwtIssuer: string; static;
     class function JwtAudience: string; static;
@@ -39,15 +36,9 @@ begin
     raise EInvalidOpException.CreateFmt('Required environment variable %s is missing', [AName]);
 end;
 
-class function TAppEnvironment.Database: TDatabaseConfig;
+class function TAppEnvironment.DatabaseConnectionString: string;
 begin
-  Result.Server := Read('DEXT_DB_SERVER', 'localhost');
-  Result.Port := StrToIntDef(Read('DEXT_DB_PORT', '5432'), 5432);
-  Result.Database := Require('DEXT_DB_DATABASE');
-  Result.Username := Require('DEXT_DB_USERNAME');
-  Result.Password := Require('DEXT_DB_PASSWORD');
-  Result.Charset := Read('DEXT_DB_CHARSET', 'UTF8');
-  Result.VendorLib := Read('DEXT_DB_VENDORLIB', '');
+  Result := Require('DEXT_DB_CONNECTION_STRING');
 end;
 
 class function TAppEnvironment.JwtSecret: string;
