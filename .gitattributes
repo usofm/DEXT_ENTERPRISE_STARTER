@@ -1,0 +1,3 @@
+*.pas linguist-language=Pascal
+*.dpr linguist-language=Pascal
+*.dpk linguist-language=Pascal
