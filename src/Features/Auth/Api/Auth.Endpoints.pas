@@ -14,7 +14,6 @@ type
 implementation
 
 uses
-  Dext.Auth.Identity,
   Auth.Contracts;
 
 class procedure TAuthEndpoints.MapEndpoints(const Builder: TAppBuilder);
@@ -32,11 +31,9 @@ begin
   Builder.MapGet<IHttpContext, IResult>('/api/auth/me',
     function(Context: IHttpContext): IResult
     begin
-      if (Context.User = nil) or not Context.User.Identity.IsAuthenticated then
-        Exit(Results.StatusCode(401, 'Unauthorized'));
-
-      Result := Results.Ok(Context.User.Identity.Name);
-    end);
+      Result := Results.Ok(Context.User.FindFirst('name'));
+    end)
+    .RequireAuthorization;
 end;
 
 end.
