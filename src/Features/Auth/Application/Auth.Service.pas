@@ -3,17 +3,17 @@ unit Auth.Service;
 interface
 
 uses
-  Auth.Contracts,
-  Security.Jwt;
+  Dext.Auth.JWT,
+  Auth.Contracts;
 
 type
   TDevelopmentAuthService = class(TInterfacedObject, IAuthService)
   private
-    FJwt: IJwtService;
+    FJwt: IJwtTokenHandler;
     FUsername: string;
     FPassword: string;
   public
-    constructor Create(const AJwt: IJwtService);
+    constructor Create(const AJwt: IJwtTokenHandler);
     function Login(const ARequest: TLoginRequest; out AResponse: TLoginResponse): Boolean;
   end;
 
@@ -23,7 +23,7 @@ uses
   System.SysUtils,
   App.Environment;
 
-constructor TDevelopmentAuthService.Create(const AJwt: IJwtService);
+constructor TDevelopmentAuthService.Create(const AJwt: IJwtTokenHandler);
 begin
   inherited Create;
   FJwt := AJwt;
@@ -37,7 +37,13 @@ begin
   if not Result then
     Exit;
 
-  AResponse.AccessToken := FJwt.GenerateAccessToken('dev-admin', FUsername, 'Admin');
+  var Claims := TClaimsBuilder.Create
+    .AddSub('dev-admin')
+    .AddName(FUsername)
+    .AddRole('Admin')
+    .Build;
+
+  AResponse.AccessToken := FJwt.GenerateToken(Claims);
   AResponse.TokenType := 'Bearer';
   AResponse.ExpiresIn := 3600;
 end;
