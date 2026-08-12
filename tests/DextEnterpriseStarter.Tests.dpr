@@ -5,10 +5,8 @@ program DextEnterpriseStarter.Tests;
 uses
   DUnitX.Loggers.Console,
   DUnitX.TestFramework,
-  Accounts.Models in '..\src\Features\Accounts\Domain\Accounts.Models.pas',
   Accounts.Contracts in '..\src\Features\Accounts\Application\Accounts.Contracts.pas',
-  Accounts.Service in '..\src\Features\Accounts\Application\Accounts.Service.pas',
-  Accounts.Fakes in 'Accounts.Fakes.pas',
+  Accounts.Rules in '..\src\Features\Accounts\Application\Accounts.Rules.pas',
   Accounts.Service.Tests in 'Accounts.Service.Tests.pas';
 
 var
