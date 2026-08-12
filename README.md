@@ -1,6 +1,6 @@
 # DEXT_ENTERPRISE_STARTER
 
-Golden enterprise starter for **Delphi 13 + Dext + FireDAC**, supporting both **Firebird 5** and **PostgreSQL 17/18** from one codebase.
+Golden enterprise starter for **Delphi 13 + Dext + FireDAC + PostgreSQL 17/18**.
 
 This repository is the practical companion to `usofm/DEXT_AI_CODING_PACK` and is intended to validate real AI-assisted Dext development against a production-style architecture.
 
@@ -11,19 +11,18 @@ Dext upstream: cesarliws/dext
 Audited SHA:   412ed29207d2d1dc5d4a259a7739a615aed0c626
 Delphi:        13
 Data access:   FireDAC
-Databases:     Firebird 5 | PostgreSQL 17 | PostgreSQL 18
+Database:      PostgreSQL 17 / PostgreSQL 18
 ```
 
-The database provider is selected at runtime through configuration. Application and Domain code must not branch on the database engine.
+The starter intentionally targets one database family to keep the Golden Sample focused, deterministic, and easy to validate.
 
 ## Implemented
 
 - Feature-first / Clean Architecture-inspired layout
 - Thin Dext Minimal API endpoint modules
 - Typed Dext dependency injection
-- FireDAC connection factory
-- Runtime-selectable Firebird/PostgreSQL provider
-- Firebird 5 and PostgreSQL 17/18 schema profiles
+- FireDAC PostgreSQL connection factory
+- PostgreSQL 17/18 schema using identity keys
 - Financial `NUMERIC(28,10)` + Delphi `TBcd`
 - JWT middleware bootstrap using Dext auth APIs
 - Development login feature with credentials supplied only by environment variables
@@ -61,40 +60,14 @@ src/
         └── Api/
 
 database/
-├── firebird/
-│   ├── 01_schema.sql
-│   └── 02_seed.sql
 └── postgresql/
     ├── 01_schema.sql
     └── 02_seed.sql
 ```
 
-## Database Provider Selection
-
-Use `DEXT_DB_PROVIDER`:
+## PostgreSQL Configuration
 
 ```text
-firebird
-postgresql
-```
-
-Firebird example:
-
-```text
-DEXT_DB_PROVIDER=firebird
-DEXT_DB_SERVER=localhost
-DEXT_DB_PORT=3050
-DEXT_DB_DATABASE=C:/Data/enterprise.fdb
-DEXT_DB_USERNAME=SYSDBA
-DEXT_DB_PASSWORD=change-me
-DEXT_DB_CHARSET=UTF8
-DEXT_DB_VENDORLIB=C:/Firebird/firebird.conf/../fbclient.dll
-```
-
-PostgreSQL example:
-
-```text
-DEXT_DB_PROVIDER=postgresql
 DEXT_DB_SERVER=localhost
 DEXT_DB_PORT=5432
 DEXT_DB_DATABASE=enterprise
@@ -104,16 +77,15 @@ DEXT_DB_CHARSET=UTF8
 DEXT_DB_VENDORLIB=C:/PostgreSQL/bin/libpq.dll
 ```
 
-`DEXT_DB_VENDORLIB` is optional when FireDAC can already resolve the native client library.
+`DEXT_DB_VENDORLIB` is optional when FireDAC can already locate `libpq.dll`.
 
 ## Core Rules
 
 - Business rules live in Application/Domain, never in HTTP handlers.
 - FireDAC is isolated under Infrastructure.
-- Database-specific differences are isolated to configuration, SQL migrations, and provider adapters.
 - API endpoints are thin transport adapters.
-- Financial data uses database `NUMERIC(28,10)` and Delphi `TBcd` end-to-end.
-- Do not use `Double` or `Currency` as the authoritative financial storage type.
+- Financial data uses PostgreSQL `NUMERIC(28,10)` and Delphi `TBcd` end-to-end.
+- Do not use `Double` or `Currency` as authoritative financial storage types.
 - Dext route parameters use `{id}`, never `:id`.
 - Use Dext generic handler DI / constructor injection; never request service-locator patterns.
 - Keep `Dext.Web` last among Dext helper units where class-helper order matters.
@@ -135,21 +107,14 @@ GET  /swagger.json
 
 ## Database Setup
 
-For Firebird 5:
-
-```text
-database/firebird/01_schema.sql
-database/firebird/02_seed.sql
-```
-
-For PostgreSQL 17/18:
+Run:
 
 ```text
 database/postgresql/01_schema.sql
 database/postgresql/02_seed.sql
 ```
 
-Use a least-privilege application database user in production.
+Use a least-privilege PostgreSQL application role in production.
 
 ## Delphi Build
 
@@ -157,8 +122,8 @@ Install/configure:
 
 - Delphi 13
 - Dext matching the pinned SHA
-- FireDAC
-- Firebird 5 client and/or PostgreSQL client library
+- FireDAC PostgreSQL driver
+- PostgreSQL native client (`libpq.dll`)
 - DUnitX
 
 Build:
@@ -172,10 +137,9 @@ The public GitHub CI currently performs static checks; it is not a substitute fo
 
 ## Validation Matrix
 
-The Golden Starter should ultimately be validated against:
+The Golden Starter should be validated against:
 
 ```text
-Delphi 13 + FireDAC + Firebird 5
 Delphi 13 + FireDAC + PostgreSQL 17
 Delphi 13 + FireDAC + PostgreSQL 18
 ```
