@@ -17,7 +17,9 @@ jobs:
         run: |
           set -euo pipefail
           test -f src/DextEnterpriseStarter.dpr
-          test -f database/01_schema.sql
+          test -f database/postgresql/01_schema.sql
+          test -f database/postgresql/02_seed.sql
+          test -f src/Features/Accounts/Infrastructure/Accounts.FireDACRepository.pas
           test -f AGENTS.md
           test -f .env.example
 
@@ -44,7 +46,17 @@ jobs:
         run: |
           set -euo pipefail
           grep -RIn 'TBcd' src/Features/Accounts src/Shared --include='*.pas'
-          grep -n 'NUMERIC(28,10)' database/01_schema.sql
+          grep -n 'NUMERIC(28,10)' database/postgresql/01_schema.sql
+
+      - name: Guard data-access profile
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -RIn 'FireDAC.Phys.PG' src/Infrastructure --include='*.pas'
+          if grep -RInE 'UniDAC|TUniConnection|TUniQuery|FireDAC\.Phys\.FB|dpFirebird' src docs README.md --include='*.pas' --include='*.md'; then
+            echo 'Legacy UniDAC/Firebird reference detected'
+            exit 1
+          fi
 
       - name: Ensure secrets are not committed
         shell: bash
